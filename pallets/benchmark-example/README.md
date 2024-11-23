@@ -11,6 +11,6 @@ cargo build --release --features=runtime-benchmarks
     --steps=50 \
     --repeat=20 \
     --wasm-execution=compiled \
-    --output=pallets/template/src/weights.rs \
+    --output=pallets/benchmark-example/src/weights.rs \
     --template ./.maintain/frame-weight-template.hbs
 ```
