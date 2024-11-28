@@ -1,6 +1,7 @@
 use crate as pallet_benchmark_example;
 use frame_support::derive_impl;
 use sp_runtime::BuildStorage;
+use crate::ConstU32;
 
 type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -20,6 +21,7 @@ impl frame_system::Config for Test {
 
 impl pallet_benchmark_example::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
+	type MaxAttributeKeySize = ConstU32<32>;
 	type WeightInfo = ();
 }
 

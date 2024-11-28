@@ -159,10 +159,12 @@ impl pallet_sudo::Config for Runtime {
 impl pallet_template::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_template::weights::SubstrateWeight<Runtime>;
+	type Currency = Balances;
 }
 
 /// Configure the pallet-benchmark-example in pallets/benchmark-example.
 impl pallet_benchmark_example::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+	type MaxAttributeKeySize = ConstU32<10000>;
 	type WeightInfo = pallet_benchmark_example::SubstrateWeight<Runtime>;
 }

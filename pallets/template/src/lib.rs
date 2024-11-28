@@ -60,13 +60,16 @@ mod benchmarking;
 pub mod weights;
 pub use weights::*;
 
+type CurrencyOf<T: Config> = <T as pallet::Config>::Currency;
+
 // All pallet logic is defined in its own module and must be annotated by the `pallet` attribute.
 #[frame_support::pallet]
 pub mod pallet {
 	// Import various useful types required by all FRAME pallets.
 	use super::*;
-	use frame_support::pallet_prelude::*;
+	use frame_support::{pallet_prelude::*, traits::{fungible, tokens::Preservation}};
 	use frame_system::pallet_prelude::*;
+	use frame_support::traits::fungible::{Inspect, Mutate};
 
 	// The `Pallet` struct serves as a placeholder to implement traits, methods and dispatchables
 	// (`Call`s) in this pallet.
@@ -79,11 +82,13 @@ pub mod pallet {
 	/// These types are defined generically and made concrete when the pallet is declared in the
 	/// `runtime/src/lib.rs` file of your chain.
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + pallet_balances::Config {
 		/// The overarching runtime event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// A type representing the weights required by the dispatchables of this pallet.
 		type WeightInfo: WeightInfo;
+		/// The currency type.
+		type Currency: fungible::Mutate<Self::AccountId>;
 	}
 
 	/// A storage item for this pallet.
@@ -91,7 +96,7 @@ pub mod pallet {
 	/// In this template, we are declaring a storage item called `Something` that stores a single
 	/// `u32` value. Learn more about runtime storage here: <https://docs.substrate.io/build/runtime-storage/>
 	#[pallet::storage]
-	pub type Something<T> = StorageValue<_, u32>;
+	pub type Something<T: Config> = StorageValue<_, T::Balance>;
 
 	/// Events that functions in this pallet can emit.
 	///
@@ -109,7 +114,7 @@ pub mod pallet {
 		/// A user has successfully set a new value.
 		SomethingStored {
 			/// The new value set.
-			something: u32,
+			something: T::Balance,
 			/// The account who set the new value.
 			who: T::AccountId,
 		},
@@ -151,10 +156,21 @@ pub mod pallet {
 		/// It checks that the _origin_ for this call is _Signed_ and returns a dispatch
 		/// error if it isn't. Learn more about origins here: <https://docs.substrate.io/build/origins/>
 		#[pallet::call_index(0)]
-		#[pallet::weight(T::WeightInfo::do_something())]
-		pub fn do_something(origin: OriginFor<T>, something: u32) -> DispatchResult {
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::do_something())]
+		pub fn do_something(origin: OriginFor<T>, something: T::Balance) -> DispatchResult {
 			// Check that the extrinsic was signed and get the signer.
 			let who = ensure_signed(origin)?;
+			
+			// Tight Coupling
+			let saldo = pallet_balances::Pallet::<T>::free_balance(&who);
+			pallet_balances::Pallet::<T>::transfer(&who, &who, saldo, Preservation::Preserve)?;
+
+			// Loose Coupling
+			// let saldo = <<T as pallet::Config>::Currency as fungible::Inspect<T::AccountId>>::balance(&who);
+			let saldo = CurrencyOf::<T>::balance(&who);
+			let saldo = T::Currency::balance(&who);
+			CurrencyOf::<T>::transfer(&who, &who, saldo, Preservation::Preserve)?;
+			T::Currency::transfer(&who, &who, saldo, Preservation::Preserve)?;
 
 			// Update storage.
 			Something::<T>::put(something);
@@ -180,7 +196,7 @@ pub mod pallet {
 		/// - If incrementing the value in storage causes an arithmetic overflow
 		///   ([`Error::StorageOverflow`])
 		#[pallet::call_index(1)]
-		#[pallet::weight(T::WeightInfo::cause_error())]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::cause_error())]
 		pub fn cause_error(origin: OriginFor<T>) -> DispatchResult {
 			let _who = ensure_signed(origin)?;
 
@@ -191,9 +207,9 @@ pub mod pallet {
 				Some(old) => {
 					// Increment the value read from storage. This will cause an error in the event
 					// of overflow.
-					let new = old.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
+					// let new = old.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
 					// Update the value in storage with the incremented result.
-					Something::<T>::put(new);
+					// Something::<T>::put(new);
 					Ok(())
 				},
 			}
