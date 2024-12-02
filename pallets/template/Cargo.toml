@@ -13,16 +13,16 @@ publish = false
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-codec = { features = [
-	"derive",
-], workspace = true }
-scale-info = { features = [
-	"derive",
-], workspace = true }
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+pallet-balances.workspace = true
+frame = { version = "0.7.0", package = "polkadot-sdk-frame", default-features = false, features = [
+	"experimental",
+	"runtime",
+] }
 frame-benchmarking = { optional = true, workspace = true }
 frame-support.workspace = true
 frame-system.workspace = true
-pallet-balances.workspace = true
 
 [dev-dependencies]
 sp-core = { default-features = true, workspace = true }
@@ -33,6 +33,7 @@ sp-runtime = { default-features = true, workspace = true }
 default = ["std"]
 std = [
 	"codec/std",
+	"frame/std",
 	"frame-benchmarking?/std",
 	"frame-support/std",
 	"frame-system/std",
@@ -45,7 +46,4 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 ]
-try-runtime = [
-	"frame-support/try-runtime",
-	"frame-system/try-runtime",
-]
+try-runtime = ["frame-support/try-runtime", "frame-system/try-runtime"]
